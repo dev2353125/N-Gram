@@ -108,7 +108,7 @@ UTF-8 supported
 Processing time is printed to the console after every run.
 
 
-Design Assumptions:
+Design:
 
 Text is converted to lowercase before processing so `"The"` and `"the"` are treated as the same word
 All characters except letters, numbers, and spaces are removed before turning into tokens
