@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class Exporter {
 
-    // 64 KB write buffer  default is 8 KB which causes many small flushes on large maps
+    // 64 extended from 8 KB write buffer (default is 8 KB which might cause many small/rapid flushes on large maps)
     private static final int BUFFER_SIZE = 64 * 1024;
 
     public static void exportCSV(Map<String, Integer> freqMap, String filePath) throws IOException {
