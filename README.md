@@ -2,7 +2,7 @@ README
 
 What This Project Does:
 
-This tool takes a block of text (typed or from a `.txt` file), cleans it up, breaks it into word combinations called N-Grams and counts how often each one appears and exports the results as a CSV and JSON file.
+This tool takes a block of text (typed or from a `.txt` file), cleans it up, breaks it into character combinations called N-Grams and counts how often each one appears and exports the results as a CSV and JSON file.
 
 
 
@@ -12,7 +12,7 @@ Project Structure:
 ngram-generator/
 ├── src/
 │   ├── main/java/com/ngram/
-│   │   ├── TextCleaner.java      # This cleans text, turns it into tokens, and generates N-Grams
+│   │   ├── TextCleaner.java      # This cleans text, turns it into character tokens, and generates N-Grams
 │   │   ├── Exporter.java         # This counts frequencies and then exports CSV and JSON
 │   │   └── Main.java             # Runs the entire program
 │   └── test/java/com/ngram/
@@ -63,16 +63,16 @@ After running, two files will be saved in your chosen output folder:
 ngrams.csv:
 
 ngram,frequency
-full text,25
-text search,18
+he,12
+el,10
 
 
 ngrams.json:
 
 
 {
-  "full text": 25,
-  "text search": 18
+  "he": 12,
+  "el": 10
 }
 
 
@@ -81,16 +81,16 @@ ngrams.json:
 Sample Test Cases:
 
 Input:
-`"Full text search"`
-`"hello hello world"`
+`"hello"`
+`"aab"`
 
 N Value:
 N=2
 N=1
 
 Expected Output:
-`"full text"`, `"text search"`
-`hello = 2`, `world = 1`
+`"he"`, `"el"`, `"ll"`, `"lo"`
+`a = 2`, `b = 1`
 
 How to Run Unit Tests:
 
@@ -110,7 +110,7 @@ Processing time is printed to the console after every run.
 
 Design:
 
-Text is converted to lowercase before processing so `"The"` and `"the"` are treated as the same word
+Text is converted to lowercase before processing so `"T"` and `"t"` are treated as the same character
 All characters except letters, numbers, and spaces are removed before turning into tokens
 N-Gram sizes are configurable at runtime
 Output files are always named `ngrams.csv` and `ngrams.json` and saved to the folder you specify
