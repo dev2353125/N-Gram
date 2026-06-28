@@ -5,10 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 public class Main {
 
@@ -65,34 +61,9 @@ public class Main {
             // Stops timer
             long endTime = System.currentTimeMillis();
 
-            // Exports CSV and JSON at the same time since they're independent writes
-            System.out.println("[export] Writing CSV and JSON using 2 thread(s)");
-            ExecutorService exportPool = Executors.newFixedThreadPool(2);
-            try {
-                Future<?> csvFuture = exportPool.submit(() -> {
-                    try {
-                        Exporter.exportCSV(freqMap, outputFolder + "\\ngrams.csv");
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-                Future<?> jsonFuture = exportPool.submit(() -> {
-                    try {
-                        Exporter.exportJSON(freqMap, outputFolder + "\\ngrams.json");
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-
-                csvFuture.get();
-                jsonFuture.get();
-
-            } catch (InterruptedException | ExecutionException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Export failed", e);
-            } finally {
-                exportPool.shutdown();
-            }
+            // Exports results
+            Exporter.exportCSV(freqMap, outputFolder + "\\ngrams.csv");
+            Exporter.exportJSON(freqMap, outputFolder + "\\ngrams.json");
 
             // this computes total N-Grams mathematically so we don't have to store them
             long totalNgrams = 0;
