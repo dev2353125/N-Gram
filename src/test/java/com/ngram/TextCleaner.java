@@ -15,14 +15,14 @@ public class TextCleaner {
     private static final int MULTITHREADING_THRESHOLD = 10_000;
 
     // N <= this value uses the int[] fast path and above it falls back to HashMap
-    // EX: N=4 -> 37^4 = 1.8M slots 
-    // EX: N=5 -> 37^5 = 69M slots (too much so fallback)
+    // N=4 -> 37^4 = 1.8M slots = 7 MB (I believe this is generally safe)
+    // N=5 -> 37^5 = 69M slots = 264 MB threshold for fallback since its unstable after 5
     private static final int MAX_N_FOR_ARRAY = 4;
 
     // 37 valid characters: a-z (0-25), 0-9 (26-35), space (36)
     private static final int BASE = 37;
 
-    // Maps a character to its base-37 index, or -1 if not in the alphabet
+    // Maps a character to its base-37 index or -1 if not in the alphabet
     // A flat 128-entry lookup table avoids branching in the hot loop
     private static final int[] CHAR_INDEX = new int[128];
 
@@ -33,7 +33,7 @@ public class TextCleaner {
         CHAR_INDEX[' '] = 36;                                            // space -> 36
     }
 
-    //  Clean it
+    //  Clean 
 
     public static String clean(String text, boolean lowercase, boolean removeSpecialChars) {
 
@@ -60,11 +60,11 @@ public class TextCleaner {
         return sb.toString();
     }
 
-    //  Public entry point 
+    // Public entry point
 
     public static Map<String, Integer> countNGrams(String text, int minN, int maxN) {
         if (maxN <= MAX_N_FOR_ARRAY) {
-            // Fast path: int[] array per N value, no String allocation in hot loop
+            // Fast path (int[] array per N value, no String allocation in hot loop)
             return text.length() < MULTITHREADING_THRESHOLD
                     ? countNGramsArray(text, minN, maxN)
                     : countNGramsArrayMultiThreaded(text, minN, maxN);
@@ -81,7 +81,7 @@ public class TextCleaner {
     private static Map<String, Integer> countNGramsArray(String text, int minN, int maxN) {
         int len = text.length();
 
-        // One int[] per N value Indexed by base-37 encoding of the N-gram.
+        // One int[] per N value. Indexed by base-37 encoding of the N-gram
         int[][] arrays = new int[maxN - minN + 1][];
         int[] sizes = new int[maxN - minN + 1];
         for (int n = minN; n <= maxN; n++) {
@@ -89,10 +89,10 @@ public class TextCleaner {
             arrays[n - minN] = new int[sizes[n - minN]];
         }
 
-        // Pre-convert the text to an int[] of char indices 
+        // Pre-convert the text to an int[] of char indices once
         int[] indices = toIndexArray(text);
         if (indices == null) {
-            // Text contains characters outside our alphabet
+            // if Text contains characters outside our alphabet then fall back to HashMap
             return countNGramsHashMap(text, minN, maxN);
         }
 
@@ -108,7 +108,7 @@ public class TextCleaner {
         return decodeArrays(arrays, sizes, minN, maxN);
     }
 
-    //  Array fast path (multi-threaded)
+    //  Array fast path (multi-threaded) 
 
     private static Map<String, Integer> countNGramsArrayMultiThreaded(String text, int minN, int maxN) {
         int numThreads = Runtime.getRuntime().availableProcessors();
@@ -132,7 +132,7 @@ public class TextCleaner {
             futures.add(executor.submit(new ArrayNGramCounter(slice, minN, maxN)));
         }
 
-        // Merge: just add element-wise across the int[] arrays
+        // Merge  (just add element-wise across the int[] arrays)
         int numN = maxN - minN + 1;
         int[][] merged = new int[numN][];
         int[] sizes = new int[numN];
@@ -260,16 +260,16 @@ public class TextCleaner {
         }
     }
 
-    //  Helpers 
+    // Helpers
 
-    // Converts text to array of base-37 indices Returns null if any char is outside alphabet
+    // Converts text to array of base-37 indices and Returns null if any char is outside alphabet
     private static int[] toIndexArray(String text) {
         int len = text.length();
         int[] indices = new int[len];
         for (int i = 0; i < len; i++) {
             char c = text.charAt(i);
             int idx = (c < 128) ? CHAR_INDEX[c] : -1;
-            if (idx == -1) return null; // unexpected char  caller falls back to HashMap
+            if (idx == -1) return null; // if unexpected char then caller falls back to HashMap
             indices[i] = idx;
         }
         return indices;
