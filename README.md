@@ -6,22 +6,6 @@ This tool takes a block of text (typed or from a `.txt` file), cleans it up, bre
 
 
 
-Project Structure:
-
-
-ngram-generator/
-├── src/
-│   ├── main/java/com/ngram/
-│   │   ├── TextCleaner.java      # This cleans text, turns it into character tokens, and generates N-Grams
-│   │   ├── Exporter.java         # This counts frequencies and then exports CSV and JSON
-│   │   └── Main.java             # Runs the entire program
-│   └── test/java/com/ngram/
-│       └── NGramTest.java        # JUnit 5 unit tests - used for debugging/checking
-└── pom.xml                       # Maven config and dependencies
-
-
-
-
 Requirements:
 
 
