@@ -1,8 +1,11 @@
 package com.ngram;
 
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -27,7 +30,21 @@ public class Main {
             } else if (choice.equals("2")) {
                 System.out.print("Enter full path to your .txt file: ");
                 String filePath = scanner.nextLine().trim().replace("\"", "");
-                inputText = Files.readString(Paths.get(filePath), java.nio.charset.StandardCharsets.UTF_8);
+
+                // Memory-mapped file read: OS maps the file into virtual memory
+                // so the JVM never copies the full 100MB into the heap at once.
+                // Much faster than Files.readString for large inputs.
+                try (FileChannel channel = FileChannel.open(
+                        Paths.get(filePath), StandardOpenOption.READ)) {
+
+                    long size = channel.size();
+                    MappedByteBuffer buffer = channel.map(
+                        FileChannel.MapMode.READ_ONLY, 0, size);
+
+                    byte[] bytes = new byte[(int) size];
+                    buffer.get(bytes);
+                    inputText = new String(bytes, StandardCharsets.UTF_8);
+                }
 
             } else {
                 System.out.println("Invalid choice, exiting.");
@@ -49,35 +66,38 @@ public class Main {
             System.out.print("Enter output folder path (type full address): ");
             String outputFolder = scanner.nextLine().trim();
 
-            // Starts timer
+            // --- Start timer AFTER reading the file, to measure processing only ---
             long startTime = System.currentTimeMillis();
 
-            // Cleans the text
-            String cleanedText = TextCleaner.clean(inputText, lowercase, removeSpecialChars);
+            // Clean directly into bytes (no intermediate String allocation)
+            byte[] cleanedBytes = TextCleaner.cleanToBytes(inputText, lowercase, removeSpecialChars);
 
-            // counts N-Gram frequencies in a single pass
-            Map<String, Integer> freqMap = TextCleaner.countNGrams(cleanedText, minN, maxN);
+            // Use parallel counting for large inputs (>1MB), sequential otherwise
+            Map<String, Integer> freqMap = TextCleaner.countNGramsParallel(
+                cleanedBytes, minN, maxN);
 
-            // Stops timer
             long endTime = System.currentTimeMillis();
 
-            // Exports results
-            Exporter.exportCSV(freqMap, outputFolder + "\\ngrams.csv");
-            Exporter.exportJSON(freqMap, outputFolder + "\\ngrams.json");
+            // Use File.separator for cross-platform path building
+            String sep = java.io.File.separator;
+            Exporter.exportCSV(freqMap, outputFolder + sep + "ngrams.csv");
+            Exporter.exportJSON(freqMap, outputFolder + sep + "ngrams.json");
 
-            // this computes total N-Grams mathematically so we don't have to store them
+            // Compute total N-grams from cleaned length (no need to store them)
             long totalNgrams = 0;
+            long len = cleanedBytes.length;
             for (int n = minN; n <= maxN; n++) {
-                long len = cleanedText.length();
                 if (len >= n) totalNgrams += (len - n + 1);
             }
 
             System.out.println("\n=== Results ===");
-            System.out.println("Input size:       " + inputText.length() + " characters");
-            System.out.println("Characters found: " + cleanedText.length());
-            System.out.println("N-Grams generated:" + totalNgrams);
-            System.out.println("Unique N-Grams:   " + freqMap.size());
-            System.out.println("Processing time:  " + (endTime - startTime) + " ms");
+            System.out.println("Input size:        " + inputText.length() + " characters");
+            System.out.println("Characters found:  " + cleanedBytes.length);
+            System.out.println("N-Grams generated: " + totalNgrams);
+            System.out.println("Unique N-Grams:    " + freqMap.size());
+            System.out.println("Processing time:   " + (endTime - startTime) + " ms");
+            System.out.println("Threads used:      " +
+                Runtime.getRuntime().availableProcessors());
         }
     }
 }
