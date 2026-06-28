@@ -3,61 +3,49 @@ package com.ngram;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
 import java.util.Map;
 
 public class NGramTest {
 
-    // Tests that tokenization correctly cleans and splits text into words
+    // Tests that clean() correctly lowercases and strips special characters
     @Test
-    public void testTokenize() {
-    	List<String> tokens = TextCleaner.tokenize("The Quick Brown Fox", true, true);
+    public void testClean() {
+        String cleaned = TextCleaner.clean("The Quick Brown Fox", true, true);
 
-        // Checks that we got 4 tokens
-        assertEquals(4, tokens.size());
+        // "the quick brown fox" should be 19 characters including spaces
+        assertEquals(19, cleaned.length());
 
-        // Checks that the first token is lowercase
-        assertEquals("the", tokens.get(0));
+        // Checks that the first character is lowercase 't'
+        assertEquals('t', cleaned.charAt(0));
     }
 
-    // Tests that bigrams are generated correctly from a simple sentence
+    // Tests that character bigrams are generated and counted correctly
     @Test
     public void testBigrams() {
-    	List<String> tokens = TextCleaner.tokenize("Full text search", true, true);
+        String cleaned = TextCleaner.clean("hello", true, true);
+        Map<String, Integer> freqMap = TextCleaner.countNGrams(cleaned, 2, 2);
 
-        // Generates only bigrams N = 2
-        List<String> ngrams = TextCleaner.generateNGrams(tokens, 2, 2);
-
-        // Checks that we got exactly 2 bigrams
-        assertEquals(2, ngrams.size());
-
-        // Checks the actual bigram values match the scope doc test case
-        assertEquals("full text", ngrams.get(0));
-        assertEquals("text search", ngrams.get(1));
+        // "hello" produces 4 unique bigrams: he, el, ll, lo
+        assertEquals(4, freqMap.size());
+        assertEquals(1, (int) freqMap.get("he"));
+        assertEquals(1, (int) freqMap.get("lo"));
     }
 
-    // Tests that unigram frequency counts are correct
+    // Tests that character unigram frequency counts are correct
     @Test
     public void testFrequencyCounts() {
-    	List<String> tokens = TextCleaner.tokenize("hello hello world", true, true);
+        String cleaned = TextCleaner.clean("aab", true, true);
+        Map<String, Integer> freqMap = TextCleaner.countNGrams(cleaned, 1, 1);
 
-        // Generates only unigrams (N=1)
-        List<String> ngrams = TextCleaner.generateNGrams(tokens, 1, 1);
-
-        // Counts frequencies
-        Map<String, Integer> freqMap = Exporter.countFrequencies(ngrams);
-
-        // Checks that hello appears twice and world appears once
-        assertEquals(2, freqMap.get("hello"));
-        assertEquals(1, freqMap.get("world"));
+        // 'a' appears twice and 'b' appears once
+        assertEquals(2, (int) freqMap.get("a"));
+        assertEquals(1, (int) freqMap.get("b"));
     }
 
-    // Tests that empty input doesn't crash the program
+    // Tests that empty input doesn't crash the program (resolved)
     @Test
     public void testEmptyInput() {
-    	List<String> tokens = TextCleaner.tokenize("", true, true);
-
-        // Checks that we get an empty list back, not an error
-        assertTrue(tokens.isEmpty());
+        String cleaned = TextCleaner.clean("", true, true);
+        assertTrue(cleaned.isEmpty());
     }
 }
