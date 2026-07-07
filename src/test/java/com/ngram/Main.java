@@ -1,10 +1,18 @@
 package com.ngram;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Scanner;
+
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 
 public class Main {
 
@@ -14,7 +22,7 @@ public class Main {
 
             System.out.println("    N-Gram Generator    ");
             System.out.println("1 - Type text manually");
-            System.out.println("2 - Load a .txt file");
+            System.out.println("2 - Load a .txt file, .docx, or .pdf file");
             System.out.print("Choose an option: ");
 
             String choice = scanner.nextLine().trim();
@@ -25,9 +33,36 @@ public class Main {
                 inputText = scanner.nextLine();
 
             } else if (choice.equals("2")) {
-                System.out.print("Enter full path to your .txt file: ");
+                System.out.print("Enter full path to your .txt, .docx, or .pdf file: ");
                 String filePath = scanner.nextLine().trim().replace("\"", "");
-                inputText = Files.readString(Paths.get(filePath), java.nio.charset.StandardCharsets.UTF_8);
+                String lowerPath = filePath.toLowerCase();
+
+                if (lowerPath.endsWith(".txt")) {
+                    inputText = Files.readString(Paths.get(filePath), java.nio.charset.StandardCharsets.UTF_8);
+
+                } else if (lowerPath.endsWith(".docx")) {
+                    // Reads every paragraph out of the Word document and joins them with newlines
+                    try (FileInputStream fis = new FileInputStream(filePath);
+                         XWPFDocument document = new XWPFDocument(fis)) {
+
+                        StringBuilder textBuilder = new StringBuilder();
+                        for (XWPFParagraph paragraph : document.getParagraphs()) {
+                            textBuilder.append(paragraph.getText()).append("\n");
+                        }
+                        inputText = textBuilder.toString();
+                    }
+
+                } else if (lowerPath.endsWith(".pdf")) {
+                    // Loads the PDF and strips out all the text across every page
+                    try (PDDocument document = Loader.loadPDF(new File(filePath))) {
+                        PDFTextStripper stripper = new PDFTextStripper();
+                        inputText = stripper.getText(document);
+                    }
+
+                } else {
+                    System.out.println("Unsupported file type, exiting.");
+                    return;
+                }
 
             } else {
                 System.out.println("Invalid choice, exiting.");
